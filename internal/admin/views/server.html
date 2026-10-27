@@ -1,0 +1,84 @@
+{{define "head"}}<script src="{{$.P}}{{asset "network.js"}}" defer></script>{{end}}
+{{define "content"}}
+{{$d := .Data}}
+<header class="top"><h1>{{t "Server"}}</h1></header>
+
+<section class="card">
+  <h2>{{t "Domain and HTTPS"}}</h2>
+  <form method="post" action="{{$.P}}/admin/server/domain" class="grid">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <label><span>{{t "Domain (empty = no domain)"}}</span><input name="domain" value="{{$d.Domain}}" placeholder="video.example.com" spellcheck="false" autocomplete="off"></label>
+    <div class="end"><button type="submit" class="primary">{{t "Save and issue certificate"}}</button></div>
+  </form>
+  <ol class="hint">
+    <li>{{t "At your DNS provider, create an A record for the domain pointing to this server's IP."}}
+      {{if $d.MyHost}}{{tf "(You are connected through %s.)" $d.MyHost}}{{end}}
+      {{t "On Cloudflare, use \"DNS only\" (grey cloud): proxying video through Cloudflare's free plan is against its terms."}}</li>
+    <li>{{t "Do not create an AAAA (IPv6) record: app sessions are bound to the viewer's network, and switching from IPv4 to IPv6 mid-session breaks playback."}}</li>
+    <li>{{t "Save here. The certificate (Let's Encrypt, free) is issued within a minute and renewed automatically before it expires."}}</li>
+  </ol>
+</section>
+
+<section class="card" id="cert" data-domain="{{$d.Domain}}">
+  <h2>{{t "Certificate"}}</h2>
+  {{if not $d.Enabled}}
+    <p class="warn-text">{{t "HTTPS is off on this server: ports 80/443 were not configured (installed with --no-https, or they were already used by another program)."}}</p>
+  {{else if not $d.Domain}}
+    <p class="muted">{{t "No domain: access is through http://IP:port."}}</p>
+  {{else}}
+  <div class="tiles">
+    <div class="tile"><div class="k">{{t "Status"}}</div><div class="v" id="c-state">{{if $d.Status.Checking}}{{t "issuing…"}}{{else if $d.Status.OK}}{{t "valid"}}{{else}}{{t "error"}}{{end}}</div>
+      <div class="d" id="c-exp">{{if $d.Status.OK}}{{tf "until %s" (date $d.Status.Expires)}}{{else}}–{{end}}</div></div>
+    <div class="tile"><div class="k">{{tf "DNS of %s" $d.Domain}}</div><div class="v small mono" id="c-dns">{{range $d.Status.DNS}}{{.}} {{else}}–{{end}}</div><div class="d">{{t "where the domain points"}}</div></div>
+  </div>
+  <p class="err-text" id="c-err" {{if not $d.Status.Err}}hidden{{end}}>{{$d.Status.Err}}</p>
+  <form method="post" action="{{$.P}}/admin/server/check" class="actions mt">
+    <input type="hidden" name="csrf" value="{{.CSRF}}"><button type="submit">{{t "Check again"}}</button>
+    {{if $d.Status.OK}}<a class="button" href="https://{{$d.Domain}}{{$.P}}/admin">{{t "Open the panel over HTTPS"}}</a>{{end}}
+  </form>
+  <p class="hint">{{t "Once the certificate is valid, the panel opened through the domain requires HTTPS. App video links keep working through both the IP and the domain."}}</p>
+  {{end}}
+</section>
+
+{{$u := $d.Update}}
+<section class="card">
+  <h2>{{t "Updates"}}</h2>
+  <div class="tiles">
+    <div class="tile"><div class="k">{{t "Installed version"}}</div><div class="v">{{$u.Version}}</div><div class="d">{{if $u.Pending}}{{tf "installing %s…" $u.Pending}}{{else}}{{t "running"}}{{end}}</div></div>
+    {{if not $u.Repeater}}
+    <div class="tile"><div class="k">{{t "Latest on GitHub"}}</div><div class="v">{{or $u.Latest.Tag "–"}}</div>
+      <div class="d">{{if $u.Latest.Tag}}{{tf "published %s" (date $u.Latest.Published)}}{{else}}github.com/{{$u.Repo}}{{end}}</div></div>
+    {{end}}
+  </div>
+  {{with $u.Result}}<p class="hint">{{tf "Last update (%s):" (date $u.ResultAt)}} <b>{{.}}</b></p>{{end}}
+
+  {{if not $u.Enabled}}
+    <p class="warn-text mt">{{t "This xcod was not installed with install.sh (Docker or development): update it there."}}</p>
+  {{else if $u.Repeater}}
+    <p class="hint">{{t "Repeater: the version comes from the primary automatically (when this server has no viewers, or right away with \"Update repeaters now\" on the primary)."}}</p>
+  {{else}}
+    {{if $u.CheckErr}}<p class="hint err-text">GitHub: {{$u.CheckErr}}</p>{{end}}
+    {{if $u.Newer}}
+    <div class="update-box mt">
+      <div><b>{{tf "Version %s is available" $u.Latest.Tag}}</b>{{with $u.Latest.Notes}}<pre class="notes">{{.}}</pre>{{end}}
+        <a href="{{$u.Latest.URL}}" target="_blank" rel="noopener" class="small">{{t "View on GitHub"}}</a></div>
+      <form method="post" action="{{$.P}}/admin/server/update" data-confirm="{{tf "Update to %s? xcod restarts (about 3 s) and viewers on this server reconnect." $u.Latest.Tag}}">
+        <input type="hidden" name="csrf" value="{{.CSRF}}"><button type="submit" class="primary">{{tf "Update to %s" $u.Latest.Tag}}</button>
+      </form>
+    </div>
+    {{else if $u.Latest.Tag}}<p class="hint ok-text">{{t "You are on the latest version."}}</p>{{end}}
+  {{end}}
+
+  {{if $u.Enabled}}
+  <details class="mt">
+    <summary>{{t "Upload a binary manually"}}</summary>
+    <form method="post" action="{{$.P}}/admin/server/upload" enctype="multipart/form-data" class="inline mt" data-confirm="{{t "Install this file? xcod restarts and viewers on this server reconnect."}}">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <label><span>{{t "xcod-linux-amd64 file (built by build.ps1)"}}</span><input type="file" name="file" required></label>
+      <button type="submit">{{t "Upload and install"}}</button>
+    </form>
+  </details>
+  <p class="hint">{{t "The file is verified before the swap. If the new version does not answer within 30 s, the server rolls back to the previous one automatically."}}</p>
+  {{end}}
+</section>
+{{end}}

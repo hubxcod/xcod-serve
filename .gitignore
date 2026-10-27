@@ -1,0 +1,14 @@
+# per-server data and secrets (kept in the /data volume)
+.env
+config.json
+admin.json
+stats.json
+*.tmp
+*.log
+data/
+
+# binaries
+/xcod
+*.exe
+*.exe~
+/dist/

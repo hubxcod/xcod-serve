@@ -1,0 +1,23 @@
+{{define "content"}}
+{{$f := .Data}}
+<header class="top"><h1>{{.Title}}</h1><a class="button" href="{{$.P}}/admin/channels">{{t "Back"}}</a></header>
+<form method="post" action="{{$.P}}{{if $f.Editing}}/admin/channels/{{$f.ID}}{{else}}/admin/channels{{end}}" class="card form">
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  {{with $f.Error}}<div class="flash err" role="alert">{{.}}</div>{{end}}
+  <div class="grid">
+    <label><span>{{t "ID (becomes the link, cannot change later)"}}</span>
+      <input name="id" value="{{$f.ID}}" pattern="[A-Za-z0-9_\-]{1,64}" maxlength="64" required {{if $f.Editing}}readonly{{end}}></label>
+    <label><span>{{t "Display name"}}</span><input name="name" value="{{$f.Name}}" maxlength="80" placeholder="{{t "e.g. Sports HD"}}"></label>
+    <label class="full"><span>{{t "Source URL (provider)"}}</span>
+      <input name="url" type="url" value="{{$f.URL}}" required placeholder="http://provider/live/user/password/123.ts" spellcheck="false"></label>
+    <label><span>{{t "Quality"}}</span>
+      <select name="quality">{{range $f.Qualities}}<option value="{{.Name}}" {{if eq .Name $f.Quality}}selected{{end}}>{{t .Label}}</option>{{end}}</select></label>
+    <label><span>{{t "FPS limit (when transcoding)"}}</span>
+      <select name="fps">{{range $f.FPSOptions}}<option value="{{.}}" {{if eq . $f.FPS}}selected{{end}}>{{if .}}{{.}} fps{{else}}{{t "same as source"}}{{end}}</option>{{end}}</select></label>
+    <label><span>{{t "Video ceiling in kbps (empty = profile's)"}}</span>
+      <input name="video_kbps" type="number" min="0" max="20000" value="{{if $f.VideoKbps}}{{$f.VideoKbps}}{{end}}"></label>
+  </div>
+  <p class="hint">{{t "Changing the quality restarts the signal for ~2s without dropping anyone. Changing the URL disconnects current viewers."}}</p>
+  <div class="actions"><button type="submit" class="primary">{{t "Save"}}</button></div>
+</form>
+{{end}}

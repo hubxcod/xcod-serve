@@ -1,0 +1,11 @@
+{{define "content"}}
+<form method="post" action="{{$.P}}/admin/login" class="card login" autocomplete="on">
+  <div class="logo"><img src="{{$.P}}{{asset "logo.svg"}}" alt="" width="40" height="40">
+    <div><h1>xcod</h1><div class="muted">{{t "Streaming server"}}</div></div></div>
+  {{with .Data.Error}}<div class="flash err" role="alert">{{.}}</div>{{end}}
+  <label><span>{{t "Username"}}</span><input name="user" value="{{.Data.User}}" autocomplete="username" required autofocus></label>
+  <label><span>{{t "Password"}}</span><input name="password" type="password" autocomplete="current-password" required></label>
+  <button type="submit" class="primary wide">{{t "Sign in"}}</button>
+  <p class="foot">{{t "Restricted access. Wrong passwords lock the IP out for 15 minutes."}}</p>
+</form>
+{{end}}

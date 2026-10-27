@@ -1,0 +1,108 @@
+{{define "head"}}<script src="{{$.P}}{{asset "network.js"}}" defer></script>{{end}}
+{{define "content"}}
+{{$d := .Data}}
+<header class="top"><h1>{{t "Network"}}</h1><span class="muted">xcod {{$d.Version}} · {{if $d.Repeater}}{{t "repeater"}}{{else}}{{t "primary"}}{{end}}</span></header>
+
+{{if $d.Repeater}}
+<section class="card">
+  <h2>{{t "Link to the primary"}}</h2>
+  <div class="tiles">
+    <div class="tile"><div class="k">{{t "Status"}}</div><div class="v" id="ag-state">{{if $d.Agent.LastErr}}{{t "error"}}{{else if $d.Agent.LastOK.IsZero}}{{t "connecting…"}}{{else}}{{t "connected"}}{{end}}</div>
+      <div class="d" id="ag-last">{{if not $d.Agent.LastOK.IsZero}}{{tf "last contact %s" (ago $d.Agent.LastOK)}}{{else}}–{{end}}</div></div>
+    <div class="tile"><div class="k">{{t "Name on the primary"}}</div><div class="v" id="ag-name">{{or $d.Agent.Name "–"}}</div><div class="d" id="ag-ch">{{tf "%d channel(s)" $d.Agent.Channels}}</div></div>
+  </div>
+  <p class="err-text" id="ag-err" {{if not $d.Agent.LastErr}}hidden{{end}}>{{$d.Agent.LastErr}}</p>
+  <p class="hint" id="ag-upd" {{if not $d.Agent.Update}}hidden{{end}}>{{tf "Update: %s" $d.Agent.Update}}</p>
+  <p class="hint">{{t "Primary:"}} <code>{{$d.C.Origin}}</code>. {{t "Channels, app secret and keys come from there every 10 seconds; this server pulls each channel once from the primary and serves the viewers the primary sends here."}}</p>
+  <form method="post" action="{{$.P}}/admin/network/disconnect" class="actions" data-confirm="{{t "Disconnect from the primary? This server stops receiving viewers and is left without channels."}}">
+    <input type="hidden" name="csrf" value="{{.CSRF}}"><button type="submit" class="danger">{{t "Disconnect from the primary"}}</button>
+  </form>
+</section>
+{{end}}
+
+<section class="card">
+  <h2>{{t "This server"}}</h2>
+  <form method="post" action="{{$.P}}/admin/network/settings" class="grid">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <label><span>{{t "Outbound bandwidth for viewers (Mbps; 0 = 800)"}}</span><input type="number" min="0" max="100000" name="capacity_mbps" value="{{$d.C.CapacityMbps}}"></label>
+    <label><span>{{t "Public address (empty = automatic)"}}</span><input name="public_url" value="{{$d.C.PublicURL}}" placeholder="https://v2.example.com" spellcheck="false"></label>
+    {{if not $d.Repeater}}
+    <label class="check full"><input type="checkbox" name="origin_no_serve" {{if $d.C.OriginNoServe}}checked{{end}}>
+      <span>{{t "Distribute only: this server serves no viewers (the whole audience goes to the repeaters)"}}</span></label>
+    {{end}}
+    <div class="end"><button type="submit" class="primary">{{t "Save"}}</button></div>
+  </form>
+  <p class="hint">{{t "Use about 80% of the contracted port: 1 Gbps port → 800; 500 Mbps → 400. Viewers are split by each server's free bandwidth."}}
+    {{t "Right now:"}} <b id="local-mbps">{{printf "%.1f" $d.LocalMbps}}</b> {{t "Mbps going out from here."}}</p>
+</section>
+
+{{if not $d.Repeater}}
+<section class="card">
+  <header class="row-head"><h2>{{t "Repeaters"}}</h2>
+    <form method="post" action="{{$.P}}/admin/network/update" data-confirm="{{t "Update outdated repeaters now? Viewers on them reconnect to another server."}}">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <button type="submit" class="small">{{t "Update repeaters now"}}</button>
+    </form>
+  </header>
+  {{if $d.Nodes}}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>{{t "Repeater"}}</th><th>{{t "Status"}}</th><th class="num">{{t "Viewers"}}</th><th class="num">{{t "Bandwidth"}}</th><th>{{t "Address"}}</th><th>{{t "Install"}}</th><th></th></tr></thead>
+      <tbody>
+      {{range $d.Nodes}}
+        <tr data-node="{{.ID}}">
+          <td><b>{{.Name}}</b><div class="muted mono small">{{.ID}}{{with .Version}} · {{.}}{{end}}</div>
+            <div class="small warn-text n-upd">{{if .Outdated}}{{t "outdated"}}{{with .Update}}: {{.}}{{end}}{{end}}</div></td>
+          <td class="n-state">{{if not .Enabled}}<span class="tag off">{{t "disabled"}}</span>{{else if .Online}}<span class="tag ok">{{t "online"}}</span>{{else if .LastSeen.IsZero}}<span class="tag warn">{{t "waiting for install"}}</span>{{else}}<span class="tag warn">{{t "offline"}}</span>{{end}}</td>
+          <td class="num n-viewers">–</td>
+          <td class="num n-band">–</td>
+          <td class="mono small n-url">{{or .PublicURL "–"}}</td>
+          <td><button type="button" class="small" data-copy="{{.Command}}">{{t "Copy command"}}</button></td>
+          <td class="actions">
+            <form method="post" action="{{$.P}}/admin/network/repeaters/toggle">
+              <input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="id" value="{{.ID}}">
+              <button type="submit" class="small">{{if .Enabled}}{{t "Disable"}}{{else}}{{t "Enable"}}{{end}}</button>
+            </form>
+            <form method="post" action="{{$.P}}/admin/network/repeaters/token" data-confirm="{{tf "Rotate the token of %s? It disconnects until you run the new command there." .Name}}">
+              <input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="id" value="{{.ID}}">
+              <button type="submit" class="small">{{t "Rotate token"}}</button>
+            </form>
+            <form method="post" action="{{$.P}}/admin/network/repeaters/delete" data-confirm="{{tf "Delete repeater %s? Its viewers come back here." .Name}}">
+              <input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="id" value="{{.ID}}">
+              <button type="submit" class="small danger">{{t "Delete"}}</button>
+            </form>
+          </td>
+        </tr>
+      {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{else}}
+  <p class="muted">{{t "No repeaters. With a single server, every viewer is served here."}}</p>
+  {{end}}
+  <form method="post" action="{{$.P}}/admin/network/repeaters" class="inline mt">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <label><span>{{t "New repeater name"}}</span><input name="name" required maxlength="64" placeholder="{{t "e.g. US-East 2"}}"></label>
+    <button type="submit" class="primary">{{t "Register"}}</button>
+  </form>
+  <ol class="hint">
+    <li>{{t "Get a VPS (Ubuntu 22.04 or 24.04) and register the repeater here."}}</li>
+    <li>{{t "Click \"Copy command\" and run it on the new VPS as root. It installs everything and connects."}}</li>
+    <li>{{t "Within seconds the repeater shows \"online\" and starts receiving part of the audience. Nothing changes in the app or its backend."}}</li>
+  </ol>
+  <p class="hint">{{t "Repeaters update themselves to this server's version when they have no viewers."}}</p>
+  {{if $d.Insecure}}<p class="hint warn-text">{{t "This primary has no HTTPS: the command carries the token over http://. Server-to-server traffic is signed and encrypted anyway, but consider setting up a domain under Server before installing repeaters."}}</p>{{end}}
+</section>
+
+<section class="card">
+  <h2>{{t "Turn this server into a repeater"}}</h2>
+  <form method="post" action="{{$.P}}/admin/network/connect" class="grid" data-confirm="{{t "Turn this server into a repeater? The channels registered here will be deleted and will come from the primary."}}">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <label><span>{{t "Primary address"}}</span><input name="origin" required placeholder="https://primary.example.com" spellcheck="false"></label>
+    <label><span>{{t "Token (from the primary's Network page)"}}</span><input name="token" required autocomplete="off" spellcheck="false"></label>
+    <div class="end"><button type="submit" class="danger">{{t "Connect as repeater"}}</button></div>
+  </form>
+  <p class="hint">{{t "Usually not needed: the repeater install command already does this."}}</p>
+</section>
+{{end}}
+{{end}}

@@ -1,0 +1,68 @@
+{{define "content"}}
+{{$d := .Data}}
+<header class="top"><h1>{{t "Security"}}</h1></header>
+
+<section class="card">
+  <h2>{{t "Panel address"}}</h2>
+  <div class="with-button">
+    <input value="{{$d.PanelURL}}" readonly spellcheck="false" aria-label="{{t "Panel address"}}">
+    <button type="button" data-copy="{{$d.PanelURL}}">{{t "Copy"}}</button>
+  </div>
+  <form method="post" action="{{$.P}}/admin/security/address" class="actions mt"
+        data-confirm="{{t "Generate a new panel address? The current one stops working right away and everyone has to sign in again at the new address."}}">
+    <input type="hidden" name="csrf" value="{{.CSRF}}"><button type="submit">{{t "Generate a new address"}}</button>
+  </form>
+  <p class="hint">{{if $d.Secret}}{{t "The panel only opens at this secret address; /admin alone answers 404, as if there were no panel. Keep it private and save it with your password."}}{{else}}<span class="warn-text">{{t "The panel is at the default /admin address, which anyone scanning the server can find."}}</span>
+    {{t "Generate a secret address to hide it."}}{{end}}</p>
+</section>
+
+<section class="card">
+  <h2>{{t "Panel username and password"}}</h2>
+  <form method="post" action="{{$.P}}/admin/security/password" class="grid">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <label><span>{{t "Username"}}</span><input name="user" value="{{$d.User}}" autocomplete="username" maxlength="64" required></label>
+    <label><span>{{t "Current password"}}</span><input name="current" type="password" autocomplete="current-password" required></label>
+    <label><span>{{tf "New password (min. %d characters)" $d.MinLen}}</span><input name="new" type="password" autocomplete="new-password" minlength="{{$d.MinLen}}" required></label>
+    <label><span>{{t "Repeat the new password"}}</span><input name="confirm" type="password" autocomplete="new-password" minlength="{{$d.MinLen}}" required></label>
+    <div class="end"><button type="submit" class="primary">{{t "Change password"}}</button></div>
+  </form>
+  <p class="hint">{{tf "Last changed: %s. The password is stored only as a hash (PBKDF2). Changing it ends the sessions on other devices." (date $d.Changed)}}</p>
+</section>
+
+<section class="card">
+  <header class="row-head"><h2>{{t "Active sessions"}}</h2>
+    <form method="post" action="{{$.P}}/admin/security/sessions/others" data-confirm="{{t "End all other sessions?"}}">
+      <input type="hidden" name="csrf" value="{{.CSRF}}"><button type="submit" class="small">{{t "Sign out other devices"}}</button>
+    </form>
+  </header>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>{{t "User"}}</th><th>IP</th><th>{{t "Browser"}}</th><th>{{t "Signed in"}}</th><th>{{t "Last used"}}</th><th></th></tr></thead>
+      <tbody>
+      {{range $d.Sessions}}
+        <tr>
+          <td>{{.User}}</td><td class="mono">{{.IP}}</td><td class="muted ua">{{.Agent}}</td>
+          <td>{{date .Created}}</td><td>{{ago .LastSeen}}</td>
+          <td>{{if eq .ID $d.CurrentID}}<span class="tag ok">{{t "this one"}}</span>{{else}}
+            <form method="post" action="{{$.P}}/admin/security/sessions/{{.ID}}/end">
+              <input type="hidden" name="csrf" value="{{$.CSRF}}"><button type="submit" class="small danger">{{t "End"}}</button>
+            </form>{{end}}</td>
+        </tr>
+      {{end}}
+      </tbody>
+    </table>
+  </div>
+  <p class="hint">{{t "Sessions expire after 2h without use or 12h in total. After 5 wrong passwords the IP is locked out for 15 min."}}</p>
+</section>
+
+<section class="card">
+  <h2>{{t "IPs allowed to open the panel"}}</h2>
+  <form method="post" action="{{$.P}}/admin/security/ips">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <label><span>{{t "One IP or network per line (e.g. 200.100.50.10 or 200.100.50.0/24). Empty = any IP."}}</span>
+      <textarea name="allow" rows="4" spellcheck="false" placeholder="{{$d.MyIP}}">{{$d.Allow}}</textarea></label>
+    <p class="hint">{{t "Your IP right now:"}} <code>{{$d.MyIP}}</code>. {{t "Anyone not on the list gets a 404. xcod does not let you save a list without your own IP."}}</p>
+    <div class="actions"><button type="submit">{{t "Save list"}}</button></div>
+  </form>
+</section>
+{{end}}

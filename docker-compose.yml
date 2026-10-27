@@ -1,0 +1,39 @@
+# Deploy with "docker compose up -d" (or as a Compose service in Dokploy).
+# Environment variables:
+#   ADMIN_PASSWORD  initial panel password (without it, one is generated and printed in the log)
+#   ADMIN_USER      initial user (default admin)
+#   XCOD_PORT       port on the host (default 8090)
+services:
+  xcod:
+    build: .
+    restart: unless-stopped
+    environment:
+      ADMIN_USER: ${ADMIN_USER:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      XCOD_RESET_ADMIN: ${XCOD_RESET_ADMIN:-0}
+      TZ: ${TZ:-UTC}
+    # port published directly (no reverse proxy): less overhead for video and xcod
+    # sees each viewer's real IP
+    ports:
+      - "${XCOD_PORT:-8090}:8090"
+    volumes:
+      - xcod-data:/data
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  xcod-data:

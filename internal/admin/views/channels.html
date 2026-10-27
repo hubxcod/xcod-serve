@@ -1,0 +1,35 @@
+{{define "content"}}
+<header class="top"><h1>{{t "Channels"}}</h1><a class="button primary" href="{{$.P}}/admin/channels/new">+ {{t "New channel"}}</a></header>
+<section class="card">
+  {{if .Data}}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>{{t "Name"}}</th><th>{{t "Source"}}</th><th>{{t "Quality"}}</th><th>{{t "Status"}}</th><th class="num">{{t "Viewers"}}</th><th></th></tr></thead>
+      <tbody>
+      {{range .Data}}
+        <tr>
+          <td><b>{{.ID}}</b></td>
+          <td>{{or .Name "–"}}</td>
+          <td class="muted mono">{{.Host}}</td>
+          <td>{{t .Quality}}</td>
+          <td>{{if .Running}}<span class="tag ok">{{t "live"}}</span>{{else}}<span class="tag off">{{t "idle"}}</span>{{end}}</td>
+          <td class="num">{{.Viewers}}</td>
+          <td class="actions">
+            <a class="button small" href="{{$.P}}/admin/channels/{{.ID}}">{{t "Edit"}}</a>
+            <form method="post" action="{{$.P}}/admin/channels/{{.ID}}/delete" data-confirm="{{tf "Delete channel %s? Anyone watching is disconnected." .ID}}">
+              <input type="hidden" name="csrf" value="{{$.CSRF}}">
+              <button type="submit" class="small danger">{{t "Delete"}}</button>
+            </form>
+          </td>
+        </tr>
+      {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{else}}
+  <p class="muted">{{t "No channels yet."}} <a href="{{$.P}}/admin/channels/new">{{t "Add the first one."}}</a></p>
+  {{end}}
+  <p class="hint">{{t "The ID becomes the link: /live/ID.ts and /live/ID.m3u8 (or with the access key, if required)."}}
+    {{t "Any quality other than \"Original\" transcodes once with ffmpeg for everyone and reduces outbound bandwidth."}}</p>
+</section>
+{{end}}

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="{{.Lang}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+{{with .CSRF}}<meta name="csrf" content="{{.}}">{{end}}
+<meta name="base" content="{{.P}}">
+<meta name="color-scheme" content="light">
+<title>{{.Title}} · xcod</title>
+<link rel="icon" href="{{$.P}}{{asset "logo.svg"}}" type="image/svg+xml">
+<link rel="stylesheet" href="{{$.P}}{{asset "app.css"}}">
+{{if .JSText}}<script type="application/json" id="i18n">{{.JSText}}</script>{{end}}
+<script src="{{$.P}}{{asset "app.js"}}" defer></script>
+{{block "head" .}}{{end}}
+</head>
+<body class="{{if .User}}app{{else}}bare{{end}}">
+{{define "langs"}}<form method="get" action="{{$.P}}/admin/lang" class="lang">
+  <input type="hidden" name="next" value="{{$.Here}}">
+  <select name="l" aria-label="{{t "Language"}}" data-autosubmit>{{range $.Langs}}<option value="{{.Code}}" {{if eq .Code $.Lang}}selected{{end}}>{{.Name}}</option>{{end}}</select>
+  <noscript><button type="submit" class="small">OK</button></noscript>
+</form>{{end}}
+{{if .User}}
+<aside class="side">
+  <a class="brand" href="{{$.P}}/admin">
+    <img src="{{$.P}}{{asset "logo.svg"}}" alt="" width="28" height="28">
+    <span>xcod</span>
+  </a>
+  <nav>
+    <div class="nav-label">{{t "Streaming"}}</div>
+    <a href="{{$.P}}/admin" class="{{if eq .Nav "dashboard"}}on{{end}}">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>{{t "Dashboard"}}</a>
+    {{if not .Repeater}}
+    <a href="{{$.P}}/admin/channels" class="{{if or (eq .Nav "channels") (eq .Nav "channel_form")}}on{{end}}">
+      <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="14" rx="2.5"/><path d="m8 2 4 4 4-4"/></svg>{{t "Channels"}}</a>
+    <a href="{{$.P}}/admin/access" class="{{if eq .Nav "access"}}on{{end}}">
+      <svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m10.8 12.2 9.2-9.2M17 6l3 3M15 8l2 2"/></svg>{{t "Access"}}</a>
+    {{end}}
+    <a href="{{$.P}}/admin/stats" class="{{if eq .Nav "stats"}}on{{end}}">
+      <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m7 15 4-5 3 3 6-7"/></svg>{{t "Statistics"}}</a>
+    <div class="nav-label">{{t "System"}}</div>
+    <a href="{{$.P}}/admin/network" class="{{if eq .Nav "network"}}on{{end}}">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M12 7.5v4m0 0L6.5 17m5.5-5.5 5.5 5.5"/></svg>{{t "Network"}}</a>
+    {{if not .Repeater}}
+    <a href="{{$.P}}/admin/settings" class="{{if eq .Nav "settings"}}on{{end}}">
+      <svg viewBox="0 0 24 24"><path d="M4 6h10m4 0h2M4 12h4m4 0h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>{{t "Settings"}}</a>
+    {{end}}
+    <a href="{{$.P}}/admin/server" class="{{if eq .Nav "server"}}on{{end}}">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/></svg>{{t "Server"}}</a>
+    <a href="{{$.P}}/admin/security" class="{{if eq .Nav "security"}}on{{end}}">
+      <svg viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg>{{t "Security"}}</a>
+  </nav>
+  <div class="side-foot">xcod {{.Version}}</div>
+</aside>
+<div class="workspace">
+  <header class="topbar">
+    <span class="crumb">xcod / <b>{{.Title}}</b></span>
+    <span class="mode{{if .Repeater}} rep{{end}}">{{if .Repeater}}{{t "repeater"}}{{else}}{{t "primary"}}{{end}}</span>
+    <div class="user">
+      {{template "langs" .}}
+      <span class="avatar" aria-hidden="true">{{initial .User}}</span>
+      <span>{{.User}}</span>
+      <form method="post" action="{{$.P}}/admin/logout">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <button type="submit" class="small">{{t "Sign out"}}</button>
+      </form>
+    </div>
+  </header>
+  <main class="content">
+    {{with .NewVer}}<div class="banner">{{tf "xcod %s is available." .}} <a href="{{$.P}}/admin/server" class="button small primary">{{t "View and update"}}</a></div>{{end}}
+    {{with .Flash}}<div class="flash {{.Kind}}" role="status">{{.Text}}</div>{{end}}
+    {{template "content" .}}
+  </main>
+</div>
+{{else}}
+<main class="content">
+  {{template "content" .}}
+  <div class="login-lang">{{template "langs" .}}</div>
+</main>
+{{end}}
+</body>
+</html>

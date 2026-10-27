@@ -1,0 +1,65 @@
+{{define "content"}}
+{{$c := .Data.C}}
+<header class="top"><h1>{{t "Settings"}}</h1></header>
+<form method="post" action="{{$.P}}/admin/settings" class="form">
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  {{with .Data.Error}}<div class="flash err" role="alert">{{.}}</div>{{end}}
+
+  <section class="card">
+    <h2>{{t "Limits"}}</h2>
+    <div class="grid">
+      <label><span>{{t "Max. viewers (0 = unlimited)"}}</span><input type="number" min="0" name="max_clients" value="{{$c.MaxClients}}"></label>
+      <label><span>{{t "Max. provider connections (0 = unlimited)"}}</span><input type="number" min="0" name="max_upstreams" value="{{$c.MaxUpstreams}}"></label>
+    </div>
+    <p class="hint">{{t "With a connection limit, switching channels closes a channel with no viewers to free a slot. Channels with viewers are never closed."}}</p>
+  </section>
+
+  <section class="card">
+    <h2>{{t "Provider"}}</h2>
+    <div class="grid">
+      <label><span>{{t "Close the provider connection when idle for"}}</span><input name="idle_timeout" value="{{$c.IdleTimeout}}" placeholder="10s"></label>
+      <label><span>{{t "Reconnect if stalled for"}}</span><input name="stall_timeout" value="{{$c.StallTimeout}}" placeholder="15s"></label>
+      <label class="full"><span>{{t "User-Agent sent to the provider"}}</span><input name="user_agent" value="{{$c.UserAgent}}"></label>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>{{t "HLS and buffering"}}</h2>
+    <div class="grid">
+      <label><span>{{t "HLS segment duration (seconds)"}}</span><input type="number" min="1" max="10" name="hls_segment_seconds" value="{{$c.HLSSegment}}"></label>
+      <label><span>{{t "Segments in the playlist"}}</span><input type="number" min="3" max="20" name="hls_window" value="{{$c.HLSWindow}}"></label>
+      <label><span>{{t "Initial TS buffer (KB)"}}</span><input type="number" min="0" max="16384" name="backlog_kb" value="{{$c.BacklogKB}}"></label>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>{{t "Transcoding"}}</h2>
+    <div class="grid">
+      <label><span>{{t "Encoder preset (slower = less bandwidth, more CPU)"}}</span>
+        <select name="encoder_preset">{{range .Data.Presets}}<option {{if eq . $c.EncoderPreset}}selected{{end}}>{{.}}</option>{{end}}</select></label>
+      <label><span>{{t "ffmpeg path (empty = automatic)"}}</span><input name="ffmpeg_path" value="{{$c.FFmpegPath}}" spellcheck="false"></label>
+    </div>
+    <p class="hint">{{if .Data.FFmpeg}}ffmpeg: <code>{{.Data.FFmpeg}}</code>{{else}}<span class="err-text">{{t "ffmpeg not found: only the \"Original\" quality works."}}</span>{{end}}</p>
+  </section>
+
+  <section class="card">
+    <h2>CDN</h2>
+    <div class="grid">
+      <label><span>{{t "CDN address (empty = no CDN)"}}</span><input name="cdn_url" value="{{$c.CDNURL}}" placeholder="https://yourzone.b-cdn.net" spellcheck="false"></label>
+      <label><span>{{t "X-CDN-Secret value (min. 16 characters)"}}</span>
+        <span class="with-button"><input name="cdn_secret" id="cdn_secret" value="{{$c.CDNSecret}}" autocomplete="off" spellcheck="false">
+        <button type="button" data-generate="cdn_secret">{{t "Generate"}}</button></span></label>
+    </div>
+    <p class="hint">{{t "HLS goes out through the CDN and the server sends each segment to it once. Playlists always go through xcod, so viewer counts, limits, keys and kicks keep working. On the CDN, create a rule that sends the X-CDN-Secret header with this value."}}</p>
+  </section>
+
+  <section class="card">
+    <h2>{{t "Proxy"}}</h2>
+    <label class="check"><input type="checkbox" name="trust_proxy" {{if $c.TrustProxy}}checked{{end}}>
+      <span>{{t "Behind a reverse proxy on a private network (Traefik, nginx): use the real IP it forwards"}}</span></label>
+    <p class="hint">{{t "Only enable this if the panel or the channels are reached through a proxy. Direct access on the port does not need it."}}</p>
+  </section>
+
+  <div class="actions sticky"><button type="submit" class="primary">{{t "Save and apply"}}</button></div>
+</form>
+{{end}}

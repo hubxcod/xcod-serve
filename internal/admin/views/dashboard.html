@@ -1,0 +1,33 @@
+{{define "head"}}
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js" integrity="sha384-w6Gb3fXHb5e1LUYa/hYA5Q41bEDglN5ZPCG7Jvnoo8/X90oGnlPqBlBJCe38mEMm" crossorigin="anonymous" defer></script>
+<script src="{{$.P}}{{asset "dashboard.js"}}" defer></script>
+{{end}}
+{{define "content"}}
+<header class="top"><h1>{{t "Dashboard"}}</h1><span class="muted" id="sum">{{t "loading…"}}</span></header>
+
+<div class="tiles">
+  <div class="tile"><div class="k">{{t "Viewers"}}</div><div class="v" id="t-viewers">–</div><div class="d" id="t-viewers-d">–</div></div>
+  <div class="tile"><div class="k">{{t "Ingress"}}</div><div class="v" id="t-down">–</div><div class="d" id="t-up-n">–</div></div>
+  <div class="tile"><div class="k">{{t "Egress"}}</div><div class="v" id="t-up">–</div><div class="d" id="t-ratio">–</div></div>
+  <div class="tile"><div class="k">{{t "CPU"}}</div><div class="v" id="t-cpu">–</div><div class="d" id="t-cpu-d">–</div></div>
+  <div class="tile"><div class="k">{{t "Memory"}}</div><div class="v" id="t-mem">–</div><div class="d">{{t "xcod process"}}</div></div>
+</div>
+
+<section class="card">
+  <h2>{{t "Live channels"}}</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>{{t "Channel"}}</th><th>{{t "Status"}}</th><th class="num">TS</th><th class="num">HLS</th>
+        <th class="num" title="{{t "Received from the provider"}}">{{t "Source"}}</th>
+        <th class="num" title="{{t "Delivered signal (after transcoding)"}}">{{t "Output"}}</th>
+        <th class="num" title="{{t "Sent to all viewers combined"}}">{{t "Egress"}}</th>
+        <th class="num hide-sm">{{t "Uptime"}}</th><th>{{t "Links"}}</th><th></th>
+      </tr></thead>
+      <tbody id="live"><tr><td colspan="10" class="muted">{{t "loading…"}}</td></tr></tbody>
+    </table>
+  </div>
+  <p class="hint" id="key-hint" hidden>{{t "Channels require an access key: client links are under"}} <a href="{{$.P}}/admin/access">{{t "Access"}}</a>.</p>
+  <video id="player" controls muted playsinline hidden></video>
+</section>
+{{end}}

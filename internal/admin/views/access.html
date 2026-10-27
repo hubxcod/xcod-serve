@@ -1,0 +1,78 @@
+{{define "content"}}
+<header class="top"><h1>{{t "Access"}}</h1></header>
+
+<section class="card">
+  <h2>{{t "App access"}}</h2>
+  <form method="post" action="{{$.P}}/admin/access/app" class="grid">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <label><span>{{t "App secret (same value as in your app backend)"}}</span>
+      <span class="with-button"><input name="app_secret" id="app_secret" value="{{.Data.AppSecret}}" autocomplete="off" spellcheck="false" minlength="32">
+      <button type="button" data-generate="app_secret">{{t "Generate"}}</button></span></label>
+    <label class="check"><input type="checkbox" name="app_only" {{if .Data.AppOnly}}checked{{end}}>
+      <span>{{t "App-only: channels open only with a signed link"}}</span></label>
+    <div class="end"><button type="submit" class="primary">{{t "Save"}}</button></div>
+  </form>
+  <p class="hint">{{if .Data.AppOnly}}{{t "On: keys, keyless links and channel lists are refused; only the app can watch."}}{{else}}{{t "Off: signed app links work alongside access keys."}}{{end}}
+    {{t "Your app backend issues expiring links with this secret. Changing the secret invalidates every link already handed out."}}</p>
+</section>
+
+<section class="card">
+  <h2>{{t "Require an access key"}}</h2>
+  <form method="post" action="{{$.P}}/admin/access/require" class="inline">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <label class="check"><input type="checkbox" name="require_key" {{if .Data.RequireKey}}checked{{end}}>
+      <span>{{t "Channels open only with a valid key (recommended on a public server)"}}</span></label>
+    <button type="submit">{{t "Apply"}}</button>
+  </form>
+  <p class="hint">{{if .Data.RequireKey}}{{t "On: links without a key are refused."}}{{else}}{{t "Off: anyone with the server address can watch."}}{{end}}
+    {{t "Each client gets a channel list that already includes their key. Disabling or deleting a key disconnects whoever uses it."}}</p>
+</section>
+
+<section class="card">
+  <h2>{{t "New key"}}</h2>
+  <form method="post" action="{{$.P}}/admin/access" class="grid">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <label><span>{{t "Client name"}}</span><input name="name" required maxlength="64" placeholder="{{t "e.g. John · living room"}}"></label>
+    <label><span>{{t "Valid until (empty = no expiry)"}}</span><input name="expires" type="date" min="{{.Data.Today}}"></label>
+    <label><span>{{t "Simultaneous screens (0 = unlimited)"}}</span><input name="max_screens" type="number" min="0" value="1"></label>
+    <div class="end"><button type="submit" class="primary">{{t "Create key"}}</button></div>
+  </form>
+</section>
+
+<section class="card">
+  <h2>{{t "Keys"}}</h2>
+  {{if .Data.Keys}}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>{{t "Client"}}</th><th>{{t "Status"}}</th><th>{{t "Expires"}}</th><th class="num">{{t "Screens"}}</th><th>{{t "Client list"}}</th><th></th></tr></thead>
+      <tbody>
+      {{range .Data.Keys}}
+        <tr>
+          <td><b>{{.Name}}</b><div class="muted mono small">{{mask .Key}}</div></td>
+          <td>{{if not .Enabled}}<span class="tag off">{{t "disabled"}}</span>{{else if not .Valid}}<span class="tag warn">{{t "expired"}}</span>{{else}}<span class="tag ok">{{t "active"}}</span>{{end}}</td>
+          <td>{{if .Expires}}{{.Expires}}{{else}}<span class="muted">{{t "never"}}</span>{{end}}</td>
+          <td class="num">{{.InUse}} / {{if .MaxScreens}}{{.MaxScreens}}{{else}}∞{{end}}</td>
+          <td class="links">
+            <button type="button" class="small" data-copy="{{.Playlist}}">{{t "Copy HLS"}}</button>
+            <button type="button" class="small" data-copy="{{.TSList}}">{{t "Copy TS"}}</button>
+          </td>
+          <td class="actions">
+            <form method="post" action="{{$.P}}/admin/access/toggle">
+              <input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="key" value="{{.Key}}">
+              <button type="submit" class="small">{{if .Enabled}}{{t "Disable"}}{{else}}{{t "Enable"}}{{end}}</button>
+            </form>
+            <form method="post" action="{{$.P}}/admin/access/delete" data-confirm="{{tf "Delete the key for %s? Whoever uses it is disconnected right away." .Name}}">
+              <input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="key" value="{{.Key}}">
+              <button type="submit" class="small danger">{{t "Delete"}}</button>
+            </form>
+          </td>
+        </tr>
+      {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{else}}
+  <p class="muted">{{t "No keys yet."}}</p>
+  {{end}}
+</section>
+{{end}}

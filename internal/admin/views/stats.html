@@ -1,0 +1,46 @@
+{{define "head"}}<script src="{{$.P}}{{asset "stats.js"}}" defer></script>{{end}}
+{{define "content"}}
+<header class="top">
+  <h1>{{t "Statistics"}}</h1>
+  <div class="seg" id="period">
+    <button type="button" data-p="1" class="on">{{t "Today"}}</button><button type="button" data-p="7">{{t "7 days"}}</button><button type="button" data-p="30">{{t "30 days"}}</button><button type="button" data-p="90">{{t "90 days"}}</button>
+  </div>
+</header>
+
+<div class="tiles">
+  <div class="tile"><div class="k" id="t-p-label">{{t "Downloaded today"}}</div><div class="v" id="t-p-down">–</div><div class="d">{{t "from the provider"}}</div></div>
+  <div class="tile"><div class="k" id="t-p-label2">{{t "Sent today"}}</div><div class="v" id="t-p-up">–</div><div class="d" id="t-p-ratio">–</div></div>
+  <div class="tile"><div class="k">{{t "Hours watched"}}</div><div class="v" id="t-p-hours">–</div><div class="d" id="t-p-peak">–</div></div>
+  <div class="tile"><div class="k">{{t "Since xcod started"}}</div><div class="v" id="t-since-up">–</div><div class="d" id="t-since">–</div></div>
+</div>
+
+<section class="card">
+  <div class="chart" id="c-band">
+    <h3>{{t "Bandwidth, last 24h (Mbps)"}} <span class="legend"><span><i class="key-down"></i>{{t "Ingress (provider)"}}</span><span><i class="key-up"></i>{{t "Egress (viewers)"}}</span></span></h3>
+  </div>
+  <div class="chart" id="c-viewers"><h3>{{t "Viewers, last 24h"}}</h3></div>
+  <div class="chart" id="c-cpu"><h3>{{t "CPU, last 24h (% of one core)"}}</h3></div>
+  <p class="hint">{{t "Per-minute averages. With a CDN, \"Egress\" is what leaves the server (delivery to viewers shows in the CDN dashboard)."}}</p>
+</section>
+
+<section class="card">
+  <h2 id="ch-title">{{t "Per channel · today"}}</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>{{t "Channel"}}</th><th class="num">{{t "Downloaded"}}</th><th class="num">{{t "Sent"}}</th><th class="num">{{t "Efficiency"}}</th><th class="num">{{t "Peak"}}</th><th class="num">{{t "Hours watched"}}</th></tr></thead>
+      <tbody id="by-channel"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <header class="row-head"><h2>{{t "Per day"}}</h2><a class="button small" href="{{$.P}}/admin/stats.csv">{{t "Download CSV"}}</a></header>
+  <div class="table-wrap scroll">
+    <table>
+      <thead><tr><th>{{t "Date"}}</th><th class="num">{{t "Downloaded"}}</th><th class="num">{{t "Sent"}}</th><th class="num">{{t "Efficiency"}}</th><th class="num">{{t "Peak"}}</th><th class="num">{{t "Hours watched"}}</th></tr></thead>
+      <tbody id="by-day"></tbody>
+    </table>
+  </div>
+  <p class="hint">{{t "\"Efficiency\" is how much was delivered for each 1 GB downloaded from the provider. Totals for up to 90 days."}}</p>
+</section>
+{{end}}
